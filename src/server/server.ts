@@ -10,7 +10,7 @@ import { adminRouter } from '../admin/index'
 import { apiRouter } from '../api/index'
 import { hashPass } from '../helpers/crypto'
 import { getAvailableDomains, getMappingByDomain } from '../lib/data'
-import { setupAuth, isCorrectCredentials } from '../auth'
+import { setPass, setupAuth, isCorrectCredentials } from '../auth'
 import { ProxyMapping } from '../types/general'
 import { SNICallback } from '../helpers/SNICallback'
 import { setAuthorizedKeys } from '../helpers/authorizedKeys'
@@ -28,11 +28,13 @@ const startAppServer = (
   port: string | number,
   adminPass: string
 ): Promise<unknown> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject): unknown => {
     if (!adminPass) {
       console.error(red, errorMsg)
       return reject(errorMsg)
     }
+
+    setPass(adminPass)
 
     if (isProduction()) {
       fs.readFile('/home/myproxy/.ssh/authorized_keys', (error, data) => {
@@ -54,11 +56,11 @@ const startAppServer = (
     app.use(cookieParser())
     app.use(express.static(path.join(__dirname, '../public')))
     app.use('/admin', adminRouter)
-    app.use('/api', setupAuth(adminPass), apiRouter)
+    app.use('/api', setupAuth, apiRouter)
     app.set('view engine', 'ejs')
     app.set('views', path.join(__dirname, '../../views'))
 
-    app.get('/', setupAuth(adminPass), (_, res) =>
+    app.get('/', setupAuth, (_, res) =>
       getAvailableDomains().length > 0
         ? res.render('client')
         : res.redirect('/admin')

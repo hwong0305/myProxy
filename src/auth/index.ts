@@ -1,4 +1,9 @@
 import { hashPass } from '../helpers/crypto'
+let pass
+
+const setPass = (adminPass: string): void => {
+  pass = adminPass
+}
 
 const isCorrectCredentials = (password: string, correct: string): boolean => {
   const adminPassword = hashPass(password)
@@ -6,19 +11,17 @@ const isCorrectCredentials = (password: string, correct: string): boolean => {
   return userPassword === adminPassword
 }
 
-const setupAuth = password => {
-  return (req, res, next): undefined => {
-    const { adminPass } = req.cookies
-    const { authorization = '' } = req.headers
+const setupAuth = (req, res, next): void => {
+  const { adminPass } = req.cookies
+  const { authorization = '' } = req.headers
 
-    if (authorization) {
-      const isCorrect = isCorrectCredentials(authorization as string, password)
-      if (!adminPass && !isCorrect) res.status(401).send('Unauthorized')
-      return next()
-    }
-    if (!adminPass) return res.render('login', { error: '' })
+  if (authorization) {
+    const isCorrect = isCorrectCredentials(authorization as string, pass)
+    if (!adminPass && !isCorrect) res.status(401).send('Unauthorized')
     return next()
   }
+  if (!adminPass) return res.render('login', { error: '' })
+  return next()
 }
 
-export { setupAuth, isCorrectCredentials }
+export { setPass, setupAuth, isCorrectCredentials }
